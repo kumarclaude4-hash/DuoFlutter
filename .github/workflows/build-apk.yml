@@ -1,4 +1,4 @@
-name: Build APK
+name: Build & Sign Release APK
 
 on:
   push:
@@ -9,40 +9,68 @@ on:
 
 jobs:
   build:
-    name: Build debug APK
+    name: Build signed release APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      # ── 1. Checkout ───────────────────────────────────────────────────────
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Write google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > duoshield_app/android/app/google-services.json
-
+      # ── 2. Java ───────────────────────────────────────────────────────────
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      # ── 3. Flutter ────────────────────────────────────────────────────────
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.6'
+          flutter-version: '3.32.0'
           channel: stable
           cache: true
 
+      # ── 4. Firebase config ────────────────────────────────────────────────
+      - name: Write google-services.json
+        run: |
+          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' \
+            > duoshield_app/android/app/google-services.json
+
+      # ── 5. Keystore ───────────────────────────────────────────────────────
+      - name: Decode & place keystore
+        run: |
+          echo '${{ secrets.KEYSTORE_BASE64 }}' \
+            | base64 --decode \
+            > duoshield_app/android/app/duoshield-release.keystore
+
+      # ── 6. Dependencies ───────────────────────────────────────────────────
       - name: Flutter pub get
         working-directory: duoshield_app
         run: flutter pub get
 
-      - name: Build debug APK
+      # ── 7. Build ──────────────────────────────────────────────────────────
+      - name: Build release APK
         working-directory: duoshield_app
-        run: flutter build apk --debug
+        env:
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: flutter build apk --release
 
+      # ── 8. Rename with version + date ─────────────────────────────────────
+      - name: Rename APK
+        run: |
+          VERSION=$(grep '^version:' duoshield_app/pubspec.yaml | awk '{print $2}')
+          DATE=$(date +'%Y%m%d')
+          mv duoshield_app/build/app/outputs/flutter-apk/app-release.apk \
+             duoshield_app/build/app/outputs/flutter-apk/duoshield-${VERSION}-${DATE}.apk
+
+      # ── 9. Upload artifact ────────────────────────────────────────────────
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: duoshield-debug-apk
-          path: duoshield_app/build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 14
+          name: duoshield-release-apk
+          path: duoshield_app/build/app/outputs/flutter-apk/duoshield-*.apk
+          retention-days: 30
