@@ -1,0 +1,1 @@
+["@firebase/util", "@swc/core", "esbuild", "msw", "protobufjs", "unrs-resolver"]
