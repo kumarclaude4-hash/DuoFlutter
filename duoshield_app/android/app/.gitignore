@@ -1,0 +1,5 @@
+# Android signing — never commit these
+duoshield-release.keystore
+*.keystore
+*.jks
+key.properties
