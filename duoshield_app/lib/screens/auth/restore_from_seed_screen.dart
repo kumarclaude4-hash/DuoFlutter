@@ -67,7 +67,6 @@ class _RestoreFromSeedScreenState extends State<RestoreFromSeedScreen> {
       }
 
       setState(() => _stepText = 'Signing in...');
-      final token = await PushServer.mintToken(derivedUserId, 'AUTH_SECRET')
       final token = await PushServer.mintToken(derivedUserId, 'f9ee71080e6574bfdafcd7b113b211632fa486f68ae37676123d66f099730cb7')
           .timeout(const Duration(seconds: 60));
       final cred = await AuthService.signInWithCustomToken(token);

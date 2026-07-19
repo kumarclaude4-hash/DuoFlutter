@@ -20,10 +20,14 @@ class SeedPhraseHelper {
     if (words.length != 12) {
       return (valid: false, error: 'Please enter exactly 12 words.');
     }
-    for (final word in words) {
-      if (!bip39.wordlists.english.contains(word)) {
-        return (valid: false, error: 'Invalid word: "$word". Please check your phrase.');
+    if (!bip39.validateMnemonic(words.join(' '))) {
+      // Find which word is invalid by testing each in isolation
+      for (final word in words) {
+        if (!bip39.validateMnemonic(List.filled(12, word).join(' '))) {
+          return (valid: false, error: 'Invalid word: "$word". Please check your phrase.');
+        }
       }
+      return (valid: false, error: 'Invalid seed phrase. Please check your words.');
     }
     return (valid: true, error: null);
   }

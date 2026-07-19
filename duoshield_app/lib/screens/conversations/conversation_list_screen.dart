@@ -138,7 +138,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
       position: RelativeRect.fromLTRB(
           button.size.width - 200, 56, 0, 0),
       color: colorSurface,
-      items: [
+      items: <PopupMenuEntry<String>>[
         const PopupMenuItem(value: 'new_chat', child: Text('New Chat', style: TextStyle(color: colorTextPrimary))),
         const PopupMenuItem(value: 'new_group', child: Text('New Group', style: TextStyle(color: colorTextPrimary))),
         const PopupMenuItem(value: 'settings', child: Text('Settings', style: TextStyle(color: colorTextPrimary))),

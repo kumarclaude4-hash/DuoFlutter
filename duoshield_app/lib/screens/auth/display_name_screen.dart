@@ -47,7 +47,6 @@ class _DisplayNameScreenState extends State<DisplayNameScreen> {
       final identityKeyBytes = SeedPhraseHelper.deriveIdentityKeyPrivate(mnemonic);
       final identityKey = base64.encode(identityKeyBytes);
 
-      final token = await PushServer.mintToken(userId, 'AUTH_SECRET')
       final token = await PushServer.mintToken(userId, 'f9ee71080e6574bfdafcd7b113b211632fa486f68ae37676123d66f099730cb7')
           .timeout(const Duration(seconds: 30));
       await AuthService.signInWithCustomToken(token);

@@ -80,7 +80,7 @@ ThemeData buildAppTheme() {
       backgroundColor: colorSurfaceVariant,
       contentTextStyle: TextStyle(color: colorTextPrimary),
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: colorSurface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titleTextStyle: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: colorTextPrimary),
@@ -92,7 +92,7 @@ ThemeData buildAppTheme() {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
     ),
-    tabBarTheme: const TabBarTheme(
+    tabBarTheme: const TabBarThemeData(
       labelColor: colorAccent,
       unselectedLabelColor: colorTextSecondary,
       indicatorColor: colorAccent,
