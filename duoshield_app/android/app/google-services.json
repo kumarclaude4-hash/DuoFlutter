@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1015523956837",
+    "project_id": "my-awesome-project-2d1b2",
+    "storage_bucket": "my-awesome-project-2d1b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1015523956837:android:b74373bd62572b7a1b0e8c",
+        "android_client_info": {
+          "package_name": "com.duoshield.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHZZNfmBfeca1HQ2H2W6EjJAz1ovHCt6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

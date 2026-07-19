@@ -1,0 +1,139 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function chatParticipants(chatId) {
+      return get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+    }
+
+    function callParticipants(callId) {
+      let doc = get(/databases/$(database)/documents/calls/$(callId)).data;
+      return [doc.callerId, doc.calleeId];
+    }
+
+    // ── users/{uid} ─────────────────────────────────────────────────────────
+    // Any authenticated user can read (for presence / profile lookups).
+    // Only the owner can write their own document.
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isOwner(uid);
+    }
+
+    // ── identities/{userId} ─────────────────────────────────────────────────
+    // Keyed by DuoShield ID (not Firebase UID).
+    // Any authenticated user can read (needed to fetch pre-keys before messaging).
+    // Only the document owner can write — matched by the `uid` field inside the doc.
+    match /identities/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+                    && request.resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn()
+                    && resource.data.uid == request.auth.uid;
+      allow delete: if isSignedIn()
+                    && resource.data.uid == request.auth.uid;
+    }
+
+    // ── chats/{chatId} ──────────────────────────────────────────────────────
+    // Only participants may read or write the chat document.
+    match /chats/{chatId} {
+      allow read, write: if isSignedIn()
+                         && request.auth.uid in resource.data.participants;
+
+      // New chat creation: creator must be in the participants list they supply.
+      allow create: if isSignedIn()
+                    && request.auth.uid in request.resource.data.participants;
+
+      // ── chats/{chatId}/messages/{messageId} ─────────────────────────────
+      // Read/write restricted to participants of the parent chat.
+      match /messages/{messageId} {
+        allow read: if isSignedIn()
+                    && request.auth.uid in chatParticipants(chatId);
+        allow create: if isSignedIn()
+                      && request.auth.uid in chatParticipants(chatId)
+                      && request.resource.data.senderId == request.auth.uid;
+        allow update: if isSignedIn()
+                      && request.auth.uid in chatParticipants(chatId);
+        allow delete: if isSignedIn()
+                      && request.auth.uid in chatParticipants(chatId);
+      }
+    }
+
+    // ── groups/{groupId} ────────────────────────────────────────────────────
+    // Read/write for current members only.
+    // Group creation: creator must be in the members list they supply.
+    match /groups/{groupId} {
+      allow read: if isSignedIn()
+                  && request.auth.uid in resource.data.members;
+      allow create: if isSignedIn()
+                    && request.auth.uid in request.resource.data.members
+                    && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isSignedIn()
+                             && request.auth.uid in resource.data.members;
+
+      // ── groups/{groupId}/keys/{memberUid} ────────────────────────────────
+      // Only group members can read keys.
+      // Write is restricted: only the document owner (sender) can write their
+      // own wrapped key, or the group creator (admin) can write any key.
+      // (The push server mints a Firebase custom token, so server-side writes
+      //  from Cloud Functions bypass these rules automatically.)
+      match /keys/{memberUid} {
+        allow read: if isSignedIn()
+                    && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+        allow write: if isSignedIn()
+                     && (
+                       request.auth.uid == memberUid
+                       || request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.createdBy
+                     );
+      }
+
+      // ── groups/{groupId}/messages/{messageId} ────────────────────────────
+      match /messages/{messageId} {
+        allow read: if isSignedIn()
+                    && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+        allow create: if isSignedIn()
+                      && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members
+                      && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isSignedIn()
+                               && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+      }
+    }
+
+    // ── calls/{callId} ──────────────────────────────────────────────────────
+    // Only the caller and callee may read/write.
+    match /calls/{callId} {
+      allow read, write: if isSignedIn()
+                         && (
+                           resource == null  // allow creation check below
+                           || request.auth.uid == resource.data.callerId
+                           || request.auth.uid == resource.data.calleeId
+                         );
+      allow create: if isSignedIn()
+                    && request.resource.data.callerId == request.auth.uid;
+
+      // ── calls/{callId}/chat/{msgId} ──────────────────────────────────────
+      // In-call chat messages, accessible to caller and callee only.
+      match /chat/{msgId} {
+        allow read, write: if isSignedIn()
+                           && (
+                             request.auth.uid in callParticipants(callId)
+                           );
+      }
+    }
+
+    // ── Default deny ─────────────────────────────────────────────────────────
+    // Anything not matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
