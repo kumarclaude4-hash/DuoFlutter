@@ -14,18 +14,8 @@ dependencies:
   cloud_firestore: ^5.0.0
   firebase_messaging: ^15.0.0
   firebase_storage: ^12.0.0
-<<<<<<< HEAD
-<<<<<<< HEAD
   libsignal_protocol_dart: ^0.7.2
   sqflite_sqlcipher: '>=3.0.0 <3.4.0'
-=======
-  libsignal_protocol_dart: ^0.3.0
-  sqflite_sqlcipher: ^2.3.0+1
->>>>>>> f87dab5 (Add request validation middleware to API server routes)
-=======
-  libsignal_protocol_dart: ^0.7.2
-  sqflite_sqlcipher: '>=3.0.0 <3.4.0'
->>>>>>> 38bc39d (Giit)
   flutter_riverpod: ^2.5.1
   riverpod_annotation: ^2.3.5
   go_router: ^14.2.0

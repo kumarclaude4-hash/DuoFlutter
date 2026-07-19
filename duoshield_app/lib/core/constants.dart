@@ -1,14 +1,5 @@
 class AppConstants {
-<<<<<<< HEAD
-<<<<<<< HEAD
-  static const String pushServerUrl = 'https://duoshield.onrender.com';
-=======
-  // Push server URL — points to the Replit API server (/api prefix routes duoshield endpoints)
-  static const String pushServerUrl = 'https://b96d839a-c5c1-4a6f-a779-cd9c54b5b562-00-2hpchaypc9i5j.pike.replit.dev/api';
->>>>>>> f87dab5 (Add request validation middleware to API server routes)
-=======
   static const String pushServerUrl = 'https://duoshield-server.onrender.com';
->>>>>>> 39f58b2 (Update constants and add replit documentation)
 
   static const String firestoreUsers = 'users';
   static const String firestoreIdentities = 'identities';

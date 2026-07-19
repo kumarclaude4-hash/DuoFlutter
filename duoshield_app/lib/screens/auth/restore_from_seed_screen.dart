@@ -67,15 +67,8 @@ class _RestoreFromSeedScreenState extends State<RestoreFromSeedScreen> {
       }
 
       setState(() => _stepText = 'Signing in...');
-<<<<<<< HEAD
-<<<<<<< HEAD
-      final token = await PushServer.mintToken(derivedUserId, 'f9ee71080e6574bfdafcd7b113b211632fa486f68ae37676123d66f099730cb7')
-=======
       final token = await PushServer.mintToken(derivedUserId, 'AUTH_SECRET')
->>>>>>> f87dab5 (Add request validation middleware to API server routes)
-=======
       final token = await PushServer.mintToken(derivedUserId, 'f9ee71080e6574bfdafcd7b113b211632fa486f68ae37676123d66f099730cb7')
->>>>>>> 8f89198 (Fix navigation route names in auth screens)
           .timeout(const Duration(seconds: 60));
       final cred = await AuthService.signInWithCustomToken(token);
       final user = cred.user!;

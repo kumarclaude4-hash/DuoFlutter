@@ -47,15 +47,8 @@ class _DisplayNameScreenState extends State<DisplayNameScreen> {
       final identityKeyBytes = SeedPhraseHelper.deriveIdentityKeyPrivate(mnemonic);
       final identityKey = base64.encode(identityKeyBytes);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-      final token = await PushServer.mintToken(userId, 'f9ee71080e6574bfdafcd7b113b211632fa486f68ae37676123d66f099730cb7')
-=======
       final token = await PushServer.mintToken(userId, 'AUTH_SECRET')
->>>>>>> f87dab5 (Add request validation middleware to API server routes)
-=======
       final token = await PushServer.mintToken(userId, 'f9ee71080e6574bfdafcd7b113b211632fa486f68ae37676123d66f099730cb7')
->>>>>>> 8f89198 (Fix navigation route names in auth screens)
           .timeout(const Duration(seconds: 30));
       await AuthService.signInWithCustomToken(token);
 
