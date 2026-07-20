@@ -55,6 +55,11 @@ dependencies:
   uuid: ^4.3.3
   photo_view: ^0.14.0
 
+dependency_overrides:
+  # record_linux:0.7.2 implements record_platform_interface 1.5.x only;
+  # 1.6.0 added startStream which record_linux hasn't implemented yet.
+  record_platform_interface: 1.5.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
