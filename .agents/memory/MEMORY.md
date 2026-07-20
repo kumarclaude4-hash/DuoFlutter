@@ -1,0 +1,3 @@
+- [DuoShield CI build fixes](duoshield-ci-fixes.md) — iterative AGP/Gradle/Dart fixes needed to get Flutter Android CI green
+- [DuoShield Gradle version matrix](duoshield-gradle-matrix.md) — exact compatible version set for AGP, Gradle, Kotlin, compileSdk
+- [DuoShield CI auth](duoshield-ci-auth.md) — GIT_PAT works for push+API; GITHUB_PAT returns 401
