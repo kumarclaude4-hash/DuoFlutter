@@ -83,6 +83,5 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.21"
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'net.zetetic:android-database-sqlcipher:4.5.4'
-    implementation 'androidx.sqlite:sqlite:2.3.1'
+    // sqflite_sqlcipher bundles its own libsqlcipher.so — do not add android-database-sqlcipher here
 }
