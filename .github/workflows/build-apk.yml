@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'duoshield_app/**'
+      - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
 jobs:
@@ -39,7 +40,7 @@ jobs:
             "ndk;27.0.12077973" 2>/dev/null \
           || echo "NDK already present or skipped"
 
-      # ── 5. Firebase config (env-var approach — safe for all JSON chars) ───
+      # ── 5. Firebase config ────────────────────────────────────────────────
       - name: Write google-services.json
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
@@ -47,14 +48,62 @@ jobs:
           printf '%s' "$GOOGLE_SERVICES_JSON" \
             > duoshield_app/android/app/google-services.json
 
-      # ── 6. Keystore (env-var approach — safe for binary/base64 data) ──────
-      - name: Decode & place keystore
+      # ── 6. Keystore setup ─────────────────────────────────────────────────
+      # Uses provided secrets when valid; generates a CI keystore as fallback.
+      # Sets DS_STORE_FILE, DS_STORE_PASS, DS_KEY_ALIAS, DS_KEY_PASS in GITHUB_ENV.
+      - name: Set up signing keystore
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64:     ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_STORE_PASSWORD:  ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_ALIAS:           ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:        ${{ secrets.KEY_PASSWORD }}
         run: |
-          printf '%s' "$KEYSTORE_BASE64" \
-            | base64 --decode \
-            > duoshield_app/android/app/duoshield-release.keystore
+          set -euo pipefail
+          KS_PATH="duoshield_app/android/app/duoshield-release.keystore"
+
+          # ── Try provided keystore ──
+          USE_PROVIDED=false
+          if [ -n "${KEYSTORE_BASE64:-}" ] && [ -n "${KEY_STORE_PASSWORD:-}" ] && [ -n "${KEY_ALIAS:-}" ]; then
+            printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KS_PATH"
+            LOWER_ALIAS=$(echo "$KEY_ALIAS" | tr '[:upper:]' '[:lower:]')
+            # Verify the alias actually exists in the decoded keystore
+            if keytool -list \
+                  -keystore "$KS_PATH" \
+                  -storepass "$KEY_STORE_PASSWORD" \
+                  -alias "$LOWER_ALIAS" \
+                  2>/dev/null; then
+              echo "✅ Provided keystore valid — alias '$LOWER_ALIAS' found."
+              USE_PROVIDED=true
+              echo "DS_STORE_FILE=$KS_PATH"            >> "$GITHUB_ENV"
+              echo "DS_STORE_PASS=$KEY_STORE_PASSWORD" >> "$GITHUB_ENV"
+              echo "DS_KEY_ALIAS=$LOWER_ALIAS"         >> "$GITHUB_ENV"
+              echo "DS_KEY_PASS=${KEY_PASSWORD:-$KEY_STORE_PASSWORD}" >> "$GITHUB_ENV"
+            else
+              echo "⚠️  Alias '$LOWER_ALIAS' not in provided keystore — generating CI keystore."
+            fi
+          else
+            echo "ℹ️  KEYSTORE_BASE64 / KEY_STORE_PASSWORD / KEY_ALIAS not fully set — generating CI keystore."
+          fi
+
+          # ── Generate a CI keystore if the provided one couldn't be used ──
+          if [ "$USE_PROVIDED" = "false" ]; then
+            CI_STORE_PASS="ci_store_duoshield"
+            CI_KEY_PASS="ci_key_duoshield"
+            CI_ALIAS="duoshield"
+            keytool -genkey -v \
+              -keystore "$KS_PATH" \
+              -alias "$CI_ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 3650 \
+              -storepass "$CI_STORE_PASS" \
+              -keypass   "$CI_KEY_PASS" \
+              -dname "CN=DuoShield CI, OU=CI, O=DuoShield, L=Unknown, ST=Unknown, C=US" \
+              -noprompt
+            echo "✅ CI keystore generated with alias '$CI_ALIAS'."
+            echo "DS_STORE_FILE=$KS_PATH"        >> "$GITHUB_ENV"
+            echo "DS_STORE_PASS=$CI_STORE_PASS"  >> "$GITHUB_ENV"
+            echo "DS_KEY_ALIAS=$CI_ALIAS"        >> "$GITHUB_ENV"
+            echo "DS_KEY_PASS=$CI_KEY_PASS"      >> "$GITHUB_ENV"
+          fi
 
       # ── 7. Dependencies ───────────────────────────────────────────────────
       - name: Flutter pub get
@@ -65,9 +114,9 @@ jobs:
       - name: Build release APK
         working-directory: duoshield_app
         env:
-          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_STORE_PASSWORD: ${{ env.DS_STORE_PASS }}
+          KEY_ALIAS:          ${{ env.DS_KEY_ALIAS }}
+          KEY_PASSWORD:       ${{ env.DS_KEY_PASS }}
         run: |
           flutter build apk --release --verbose \
             2>&1 | tee /tmp/flutter_build.log; BUILD_EXIT=${PIPESTATUS[0]}
