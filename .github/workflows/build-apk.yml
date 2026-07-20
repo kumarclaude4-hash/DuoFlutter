@@ -90,6 +90,8 @@ jobs:
             CI_STORE_PASS="ci_store_duoshield"
             CI_KEY_PASS="ci_key_duoshield"
             CI_ALIAS="duoshield"
+            # Remove any previously-decoded (invalid/mismatched) keystore file first
+            rm -f "$KS_PATH"
             keytool -genkey -v \
               -keystore "$KS_PATH" \
               -alias "$CI_ALIAS" \
