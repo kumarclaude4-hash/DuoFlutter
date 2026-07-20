@@ -81,7 +81,6 @@ dependencies {
     implementation 'com.google.firebase:firebase-bom:32.7.0'
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-messaging'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.21"
     implementation 'androidx.multidex:multidex:2.0.1'
     // sqflite_sqlcipher bundles its own libsqlcipher.so — do not add android-database-sqlcipher here
 }
