@@ -28,7 +28,7 @@ dependencies:
   file_picker: ^8.0.0
   video_player: ^2.8.6
   just_audio: ^0.9.39
-  record: ^5.1.0
+  record: ^6.2.1
   cached_network_image: ^3.3.1
   flutter_cache_manager: ^3.3.1
   flutter_webrtc: ^0.10.6
@@ -54,11 +54,6 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   uuid: ^4.3.3
   photo_view: ^0.14.0
-
-dependency_overrides:
-  # record_linux:0.7.2 implements record_platform_interface 1.5.x only;
-  # 1.6.0 added startStream which record_linux hasn't implemented yet.
-  record_platform_interface: 1.5.1
 
 dev_dependencies:
   flutter_test:
