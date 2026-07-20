@@ -123,15 +123,12 @@ jobs:
       - name: Build release APK
         working-directory: duoshield_app
         run: |
-          flutter build apk --release --verbose \
-            2>&1 | tee /tmp/flutter_build.log; BUILD_EXIT=${PIPESTATUS[0]}
+          flutter build apk --release 2>&1 | tee /tmp/flutter_build.log
+          BUILD_EXIT=${PIPESTATUS[0]}
           if [ "$BUILD_EXIT" -ne 0 ]; then
-            echo "===== Kotlin daemon logs ====="
-            find "$HOME/.gradle/daemon" -name "*.out.log" -exec sh -c \
-              'echo "--- $1 ---"; tail -200 "$1"' _ {} \; 2>/dev/null || true
-            echo "===== Gradle error summary ====="
-            grep -E "^e: |error:|FAILED|what went wrong|Execution failed" \
-              /tmp/flutter_build.log | tail -60 || true
+            echo "===== Build error summary ====="
+            grep -E "error:|FAILED|> Task|what went wrong|Execution failed|^e: " \
+              /tmp/flutter_build.log | tail -80 || true
             exit "$BUILD_EXIT"
           fi
 
