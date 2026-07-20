@@ -1,0 +1,6 @@
+# Android generated files
+.gradle/
+local.properties
+*.iml
+.DS_Store
+key.properties

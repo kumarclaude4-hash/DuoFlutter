@@ -23,6 +23,14 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+// key.properties is written by CI (or local developer) — never committed.
+// Falls back to System.getenv() for backwards compatibility.
+def keyProps = new Properties()
+def keyPropsFile = rootProject.file('key.properties')
+if (keyPropsFile.exists()) {
+    keyPropsFile.withReader('UTF-8') { reader -> keyProps.load(reader) }
+}
+
 android {
     namespace 'com.duoshield.app'
     compileSdk 36
@@ -53,10 +61,10 @@ android {
 
     signingConfigs {
         release {
-            storeFile file('duoshield-release.keystore')
-            storePassword System.getenv('KEY_STORE_PASSWORD')
-            keyAlias System.getenv('KEY_ALIAS')?.toLowerCase() ?: 'duoshield'
-            keyPassword System.getenv('KEY_PASSWORD')
+            storeFile file(keyProps['storeFile'] ?: 'duoshield-release.keystore')
+            storePassword keyProps['storePassword'] ?: System.getenv('KEY_STORE_PASSWORD')
+            keyAlias (keyProps['keyAlias'] ?: System.getenv('KEY_ALIAS'))?.toLowerCase() ?: 'duoshield'
+            keyPassword keyProps['keyPassword'] ?: System.getenv('KEY_PASSWORD')
         }
     }
 
