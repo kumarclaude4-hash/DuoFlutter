@@ -150,7 +150,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/safety-numbers',
       builder: (context, state) {
-        final partnerUid = state.extra as String;
+        final partnerUid = (state.extra as String?) ?? '';
         return SafetyNumbersScreen(partnerUid: partnerUid);
       },
     ),

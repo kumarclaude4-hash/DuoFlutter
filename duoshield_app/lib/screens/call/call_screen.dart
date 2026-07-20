@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -43,6 +44,8 @@ class _CallScreenState extends State<CallScreen> {
   bool _callEnded = false;
   DateTime? _callStartTime;
   String? _myUid;
+  bool _remoteDescriptionSet = false;
+  final List<String> _appliedCandidates = [];
 
   @override
   void initState() {
@@ -153,10 +156,14 @@ class _CallScreenState extends State<CallScreen> {
 
     pc.onIceCandidate = (candidate) async {
       if (_callId == null) return;
+      final map = candidate.toMap();
+      // Skip end-of-candidates signal (empty candidate string)
+      if ((map['candidate'] as String?)?.isEmpty ?? true) return;
+      final json = jsonEncode(map);
       if (widget.incomingCallId != null) {
-        await FirestoreService.addCalleeCandidate(_callId!, candidate.toMap().toString());
+        await FirestoreService.addCalleeCandidate(_callId!, json);
       } else {
-        await FirestoreService.addCallerCandidate(_callId!, candidate.toMap().toString());
+        await FirestoreService.addCallerCandidate(_callId!, json);
       }
     };
 
@@ -184,26 +191,71 @@ class _CallScreenState extends State<CallScreen> {
 
   void _listenForAnswer() {
     if (_callId == null) return;
-    _callSub = FirestoreService.watchCall(_callId!).listen((snap) {
+    _callSub = FirestoreService.watchCall(_callId!).listen((snap) async {
       if (!snap.exists || !mounted) return;
       final data = snap.data() as Map<String, dynamic>?;
       if (data == null) return;
-      if (data['status'] == 'answered' && data['answer'] != null) {
+
+      // Set remote description once when the callee answers
+      if (!_remoteDescriptionSet &&
+          data['status'] == 'answered' &&
+          data['answer'] != null) {
+        _remoteDescriptionSet = true;
         final answerData = data['answer'] as Map<String, dynamic>;
-        _peerConnection?.setRemoteDescription(RTCSessionDescription(
+        await _peerConnection?.setRemoteDescription(RTCSessionDescription(
           answerData['sdp'] as String,
           answerData['type'] as String,
         ));
       }
+
+      // Apply any callee ICE candidates we haven't seen yet
+      final rawCandidates = data['calleeCandidates'];
+      if (rawCandidates is List) {
+        for (final entry in rawCandidates) {
+          final c = entry as String;
+          if (_appliedCandidates.contains(c)) continue;
+          _appliedCandidates.add(c);
+          try {
+            final map = jsonDecode(c) as Map<String, dynamic>;
+            await _peerConnection?.addCandidate(RTCIceCandidate(
+              map['candidate'] as String?,
+              map['sdpMid'] as String?,
+              map['sdpMLineIndex'] as int?,
+            ));
+          } catch (_) {}
+        }
+      }
+
       if (data['status'] == 'ended') _endCall();
     });
   }
 
   void _listenForCallerCandidates() {
     if (_callId == null) return;
-    _callSub = FirestoreService.watchCall(_callId!).listen((snap) {
+    _callSub = FirestoreService.watchCall(_callId!).listen((snap) async {
+      if (!snap.exists || !mounted) return;
       final data = snap.data() as Map<String, dynamic>?;
-      if (data?['status'] == 'ended' && mounted) _endCall();
+      if (data == null) return;
+
+      // Apply any caller ICE candidates we haven't seen yet
+      final rawCandidates = data['callerCandidates'];
+      if (rawCandidates is List) {
+        for (final entry in rawCandidates) {
+          final c = entry as String;
+          if (_appliedCandidates.contains(c)) continue;
+          _appliedCandidates.add(c);
+          try {
+            final map = jsonDecode(c) as Map<String, dynamic>;
+            await _peerConnection?.addCandidate(RTCIceCandidate(
+              map['candidate'] as String?,
+              map['sdpMid'] as String?,
+              map['sdpMLineIndex'] as int?,
+            ));
+          } catch (_) {}
+        }
+      }
+
+      if (data['status'] == 'ended') _endCall();
     });
   }
 
